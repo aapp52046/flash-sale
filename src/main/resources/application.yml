@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: flash-sale
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:c2VjdXJlLWZhc3QtYW5kLWZ1cmlvdXMtZmxhc2gtc2FsZS1zZWNyZXQta2V5LWZvci1obWFjLTI1Ngo=}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
