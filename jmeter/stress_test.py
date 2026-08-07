@@ -14,6 +14,7 @@ Steps:
 import argparse
 import concurrent.futures
 import json
+import os
 import threading
 import time
 import urllib.request
@@ -103,6 +104,8 @@ def main():
     # 1. register users -> tokens
     tokens = []
     t0 = time.time()
+    token_dir = os.path.dirname(os.path.abspath(args.token_file))
+    os.makedirs(token_dir, exist_ok=True)
     with open(args.token_file, "w", encoding="utf-8") as f:
         for i in range(1, args.users + 1):
             user = f"u{i:04d}"
@@ -140,20 +143,22 @@ def main():
     body = {"flashProductId": args.flash_id, "quantity": 1}
     msg_of = {200: "搶購成功", 409: "重複下單", 429: "已售罄"}
     flusher = DashFlusher()
+    pairs = [(f"u{i:04d}", tok) for i, tok in enumerate(tokens, start=1)]
 
-    def one_order(tok):
+    def one_order(pair):
+        user, tok = pair
         t = time.time()
         status, resp = http_json("/api/flash/orders", "POST", token=tok, body=body)
         ms = int((time.time() - t) * 1000)
         code = resp.get("code", status) if isinstance(resp, dict) else status
-        flusher.add({"user": "", "code": code, "msg": msg_of.get(code, "其他"),
+        flusher.add({"user": user, "code": code, "msg": msg_of.get(code, "其他"),
                      "ms": ms})
         return status, resp
 
     print(f"[3] firing {len(tokens)} concurrent orders ...")
     t0 = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=200) as ex:
-        results = list(ex.map(one_order, tokens))
+        results = list(ex.map(one_order, pairs))
     elapsed = time.time() - t0
     print(f"    finished in {elapsed:.1f}s  ({len(results)/elapsed:.0f} req/s)")
 

@@ -37,15 +37,22 @@ state = {
     "running": False,
     "start_ts": None,
     "codes": collections.Counter(),
-    "latencies": [],
-    "events": collections.deque(maxlen=500),
-    "timeline": collections.deque(maxlen=900),   # (elapsed_s, orders, reqs, ok)
+    "latencies": collections.deque(maxlen=5000),
+    "events": collections.deque(maxlen=3000),
+    "series": collections.deque(maxlen=3000),  # (elapsed_s, cum_ok, cum_reqs)
+    "timeline": collections.deque(maxlen=900),   # (elapsed_s, orders, reqs)
     "log": collections.deque(maxlen=200),
     "last_req_count": 0,
     "req_per_sec": 0.0,
 }
 lock = threading.Lock()
 proc = {"handle": None}
+
+REQ_CODES = (200, 409, 429, 500)
+
+
+def req_total():
+    return sum(state["codes"].get(c, 0) for c in REQ_CODES)
 
 
 def psql_one(sql):
@@ -99,6 +106,7 @@ def reset_state(stock=None):
         state["codes"].clear()
         state["latencies"].clear()
         state["events"].clear()
+        state["series"].clear()
         state["timeline"].clear()
         state["last_req_count"] = 0
         state["log"].appendleft(f"[dashboard] 已重置：庫存={stock}")
@@ -131,10 +139,10 @@ def monitor_loop():
             state["dedup"] = dedup_n
             state["app_alive"] = alive
             elapsed = now - state["start_ts"] if state["start_ts"] else 0.0
-            total_reqs = sum(state["codes"].values())
-            state["timeline"].append((round(elapsed, 1), state["orders"], total_reqs - state["last_req_count"]))
-            state["req_per_sec"] = total_reqs - state["last_req_count"]
-            state["last_req_count"] = total_reqs
+            total = req_total()
+            state["timeline"].append((round(elapsed, 1), state["orders"], total - state["last_req_count"]))
+            state["req_per_sec"] = total - state["last_req_count"]
+            state["last_req_count"] = total
         time.sleep(1)
 
 
@@ -155,6 +163,7 @@ def spawn_stress(users, stock):
         state["codes"].clear()
         state["latencies"].clear()
         state["events"].clear()
+        state["series"].clear()
         state["timeline"].clear()
         state["last_req_count"] = 0
 
@@ -189,6 +198,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/state":
             with lock:
+                lats = list(state["latencies"])
+                sorted_lats = sorted(lats)
                 body = {
                     "orders": state["orders"],
                     "target": TARGET_STOCK,
@@ -201,10 +212,12 @@ class Handler(BaseHTTPRequestHandler):
                     "codes": dict(state["codes"]),
                     "req_per_sec": round(state["req_per_sec"], 1),
                     "events": list(state["events"]),
+                    "series": list(state["series"]),
                     "timeline": list(state["timeline"]),
                     "log": list(state["log"]),
-                    "avg_ms": round(sum(state["latencies"]) / len(state["latencies"]), 1) if state["latencies"] else 0,
-                    "p99_ms": sorted(state["latencies"])[int(len(state["latencies"]) * 0.99)] if state["latencies"] else 0,
+                    "avg_ms": round(sum(lats) / len(lats), 1) if lats else 0,
+                    "p50_ms": sorted_lats[int(len(sorted_lats) * 0.50)] if sorted_lats else 0,
+                    "p99_ms": sorted_lats[int(len(sorted_lats) * 0.99)] if sorted_lats else 0,
                 }
             self._send(200, body)
             return
@@ -221,16 +234,21 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path == "/event":
             with lock:
-                state["codes"][payload.get("code")] += 1
+                code = payload.get("code")
                 ms = payload.get("ms") or 0
-                state["latencies"].append(ms)
+                state["codes"][code] += 1
+                if isinstance(ms, (int, float)):
+                    state["latencies"].append(ms)
                 state["events"].appendleft({
                     "t": time.strftime("%H:%M:%S"),
                     "user": payload.get("user", "-"),
-                    "code": payload.get("code"),
+                    "code": code,
                     "msg": payload.get("msg", ""),
                     "ms": ms,
                 })
+                if state["start_ts"] and code in REQ_CODES:
+                    elapsed = round(time.time() - state["start_ts"], 2)
+                    state["series"].append((elapsed, state["codes"].get(200, 0), req_total()))
             self._send(200, {"ok": True})
             return
 
