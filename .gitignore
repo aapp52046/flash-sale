@@ -53,6 +53,10 @@ application-local.yml
 coverage/
 *.exec
 
+# ========== Python ==========
+__pycache__/
+*.pyc
+
 # ========== Maven ==========
 .mvn/wrapper/maven-wrapper.jar
 pom.xml.tag
