@@ -6,6 +6,9 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
 ![Redisson](https://img.shields.io/badge/Redisson-3.27-purple)
 ![Docker](https://img.shields.io/badge/Docker%20Compose-ready-blue)
+![CI](https://github.com/aapp52046/flash-sale/actions/workflows/ci.yml/badge.svg)
+![CD](https://github.com/aapp52046/flash-sale/actions/workflows/deploy.yml/badge.svg)
+![GHCR](https://img.shields.io/badge/GHCR-ghcr.io%2Faapp52046%2Fflash--sale-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 > **高併發秒殺系統 — 五層鎖策略實戰**，用真實架構解決「庫存超賣」這道經典併發難題。
@@ -140,6 +143,25 @@ python jmeter/dashboard.py
 
 ---
 
+## ⚙️ CI/CD
+
+push `main` 或開 PR 即自動觸發流水線，CI 通過後自動發布 Docker 映像：
+
+| 階段 | Workflow | 動作 |
+|---|---|---|
+| **CI** | `.github/workflows/ci.yml` | `./mvnw verify` — 編譯 + 單元測試（Java 21 / Temurin） |
+| **CD** | `.github/workflows/deploy.yml` | CI 成功後 Buildx 建構 → 推送到 GHCR（含 gha 層快取） |
+
+**映像位置**：`ghcr.io/aapp52046/flash-sale:latest` 與 `:git-sha`
+
+```bash
+docker pull ghcr.io/aapp52046/flash-sale:latest
+```
+
+部署門檻：CD 僅在 CI 成功後執行（`workflow_run` + `conclusion == 'success'`），壞掉就不發佈。
+
+---
+
 ## 🔐 鎖學習路線
 
 每個鎖機制都有一支獨立 API，可單獨觀察行為：
@@ -175,6 +197,7 @@ flash-sale/
 │   ├── scripts/deduct_stock.lua   # ★ Redis 原子扣庫存
 │   └── templates/                # Thymeleaf UI
 ├── jmeter/                   # 壓測腳本 + 即時儀表板
+├── .github/workflows/        # CI + CD（編譯測試 / GHCR 發佈）
 ├── docker-compose.yml        # PG + Redis + App×2 + Nginx
 ├── schema.sql                # 一鍵建表
 └── Dockerfile
