@@ -53,6 +53,14 @@ public class PageController {
         return "my-orders";
     }
 
+    @GetMapping("/admin")
+    public String adminPage(Model model) {
+        String username = securityUtil.getCurrentUsername();
+        if (username == null) return "redirect:/login";
+        model.addAttribute("username", username);
+        return "admin";
+    }
+
     @GetMapping("/")
     public String home() {
         Long userId = securityUtil.getCurrentUserId();

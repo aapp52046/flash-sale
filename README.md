@@ -95,7 +95,9 @@ docker compose up --build -d
 
 ### 方式二：本機開發
 
-**前置**：JDK 21、PostgreSQL 15+、Redis 7
+**前置**：JDK 21、PostgreSQL 15+
+
+Redis 已隨專案打包於 `Redis\`（Windows 版，含 `redis-server.exe`），不需另裝。
 
 ```bash
 # 1. 建庫建表
@@ -106,10 +108,14 @@ psql -U postgres -d flash_sale -f docker/seed.sql
 # 2. 環境變數（可選，預設 postgres/postgres）
 cp .env.example .env
 
-# 3. 啟動（內建 Maven Wrapper，不需另裝 Maven）
-./mvnw spring-boot:run
+# 3. 啟動（Windows：雙擊 start-dev.bat 會先開 Redis 再啟動 App）
+start-dev.bat
+# 跨平台：另開終端先啟動 Redis，再執行 ./mvnw spring-boot:run
+
 # → http://localhost:8080/login
 ```
+
+> Windows 結束時執行 `stop-dev.bat`（關 Redis）；Spring Boot 在視窗按 `Ctrl+C`。
 
 ### 即時監控儀表板
 
