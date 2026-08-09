@@ -44,4 +44,7 @@ public class FlashSaleProduct {
     @Column(nullable = false)
     @Builder.Default
     private Integer status = 0;
+
+    @Transient
+    private String productName;
 }

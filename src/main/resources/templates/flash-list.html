@@ -24,7 +24,7 @@
         <div th:each="fp : ${flashProducts}" class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title" th:text="${'商品 #' + fp.productId}">商品名稱</h5>
+                    <h5 class="card-title" th:text="${fp.productName != null ? fp.productName : '商品 #' + fp.productId}">商品名稱</h5>
                     <p class="card-text">
                         <span class="text-danger fs-4" th:text="'$' + fp.flashPrice">秒殺價</span>
                         <br>

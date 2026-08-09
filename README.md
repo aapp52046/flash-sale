@@ -92,7 +92,7 @@ docker compose up --build -d
 | `admin` | `admin123` | ADMIN |
 | `demo` | `demo123` | USER |
 
-登入後：Admin 預熱庫存 → `/flash` 搶購 → `/orders` 看訂單。
+登入後：`admin` 開 `/admin` 建活動並預熱庫存 → `/flash` 搶購（顯示商品真名）→ `/orders` 看訂單。
 
 ### 方式二：本機開發
 

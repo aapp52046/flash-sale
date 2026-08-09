@@ -4,6 +4,7 @@ import com.flashsale.common.enums.FlashSaleStatus;
 import com.flashsale.common.exception.FlashSaleException;
 import com.flashsale.dto.request.FlashProductRequest;
 import com.flashsale.entity.FlashSaleProduct;
+import com.flashsale.entity.Product;
 import com.flashsale.repository.FlashSaleProductRepository;
 import com.flashsale.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -58,16 +61,28 @@ public class FlashProductService {
         List<FlashSaleProduct> upcoming = flashSaleProductRepository
                 .findByStatus(FlashSaleStatus.NOT_STARTED.getCode());
         active.addAll(upcoming);
-        return active;
+        return enrichNames(active);
     }
 
     public FlashSaleProduct getById(Long id) {
-        return flashSaleProductRepository.findById(id)
+        FlashSaleProduct flash = flashSaleProductRepository.findById(id)
                 .orElseThrow(() -> new FlashSaleException(404, "秒殺商品不存在"));
+        productRepository.findById(flash.getProductId())
+                .ifPresent(p -> flash.setProductName(p.getName()));
+        return flash;
     }
 
     public List<FlashSaleProduct> getAll() {
-        return flashSaleProductRepository.findAll();
+        return enrichNames(flashSaleProductRepository.findAll());
+    }
+
+    private List<FlashSaleProduct> enrichNames(List<FlashSaleProduct> list) {
+        if (list.isEmpty()) return list;
+        Map<Long, String> names = productRepository.findAllById(
+                list.stream().map(FlashSaleProduct::getProductId).collect(Collectors.toSet())
+        ).stream().collect(Collectors.toMap(Product::getId, Product::getName, (a, b) -> a));
+        list.forEach(f -> f.setProductName(names.getOrDefault(f.getProductId(), "商品 #" + f.getProductId())));
+        return list;
     }
 
     public void preheatStock(Long flashProductId) {
