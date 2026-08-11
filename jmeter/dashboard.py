@@ -20,9 +20,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PSQL = os.environ.get("DASH_PSQL", r"C:\Program Files\PostgreSQL\18\bin\psql.exe")
-DB_PASSWORD = os.environ.get("DASH_DB_PASSWORD", "850910")
+DB_PASSWORD = os.environ.get("DASH_DB_PASSWORD", "postgres")
 DB_NAME = os.environ.get("DASH_DB_NAME", "flash_sale")
-REDIS_CLI = os.environ.get("DASH_REDIS_CLI", r"C:\Users\Nero\Desktop\redis\Redis\redis-cli.exe")
+REDIS_CLI = os.environ.get("DASH_REDIS_CLI", os.path.join(os.path.dirname(BASE_DIR), "Redis", "redis-cli.exe"))
 FLASH_ID = int(os.environ.get("DASH_FLASH_ID", "1"))
 TARGET_STOCK = int(os.environ.get("DASH_STOCK", "100"))
 PORT = int(os.environ.get("DASH_PORT", "9999"))
