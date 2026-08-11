@@ -41,23 +41,32 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     btn.disabled = true;
     btn.textContent = '登入中...';
 
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value
-        })
-    });
-    const data = await res.json();
-    if (data.code === 200) {
-        localStorage.setItem('jwt_token', data.data.token);
-        localStorage.setItem('username', data.data.username);
-        window.location.href = '/flash';
-    } else {
+    try {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            })
+        });
+        const data = await res.json();
+        if (data.code === 200) {
+            localStorage.setItem('jwt_token', data.data.token);
+            localStorage.setItem('username', data.data.username);
+            window.location.href = '/flash';
+        } else {
+            const alert = document.getElementById('alert');
+            alert.className = 'alert alert-danger';
+            alert.textContent = data.message;
+            alert.classList.remove('d-none');
+            btn.disabled = false;
+            btn.textContent = '登入';
+        }
+    } catch (err) {
         const alert = document.getElementById('alert');
         alert.className = 'alert alert-danger';
-        alert.textContent = data.message;
+        alert.textContent = '網路錯誤，請重試';
         alert.classList.remove('d-none');
         btn.disabled = false;
         btn.textContent = '登入';
