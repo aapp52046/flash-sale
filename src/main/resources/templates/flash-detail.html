@@ -12,16 +12,7 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/flash">秒殺系統</a>
-        <div class="navbar-nav ms-auto">
-            <span class="nav-link text-light" th:text="${username}">用戶</span>
-            <a class="nav-link" href="/orders">我的訂單</a>
-            <a class="nav-link" href="#" onclick="logout()">登出</a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar :: navbar(${username}, 'flash', false)}"></div>
 
 <div class="container mt-4">
     <a href="/flash" class="btn btn-outline-secondary mb-3">← 返回列表</a>
