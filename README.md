@@ -94,38 +94,28 @@ docker compose up --build -d
 
 登入後：`admin` 開 `/admin` 建活動並預熱庫存 → `/flash` 搶購（顯示商品真名）→ `/orders` 看訂單。
 
-### 方式二：本機開發
+### 方式二：本機開發（Windows 最快）
 
-**前置**：JDK 21、PostgreSQL 15+
+**前置**：JDK 21、PostgreSQL 15+、Python 3（儀表板用）
 
-Redis 已隨專案打包於 `Redis\`（Windows 版，含 `redis-server.exe`），不需另裝。
+Redis 已隨專案打包於 `Redis\`，不需另裝。本機 Postgres 若已佔 `:5432`，不要同時 `docker compose`。
 
-```bash
-# 1. 建庫建表
-createdb flash_sale
-psql -U postgres -d flash_sale -f schema.sql
-psql -U postgres -d flash_sale -f docker/seed.sql
+```powershell
+copy .env.example .env
+# 把 .env 裡的 DB_PASSWORD 改成你的 Postgres 密碼
 
-# 2. 環境變數（可選，預設 postgres/postgres）
-cp .env.example .env
+# 視窗 A：建庫（沒有會自動建）+ Redis + Spring Boot
+.\start-app.bat
+# → http://localhost:8080/login   admin / admin123
 
-# 3. 啟動（Windows：雙擊 start-dev.bat 會先開 Redis 再啟動 App）
-start-dev.bat
-# 跨平台：另開終端先啟動 Redis，再執行 ./mvnw spring-boot:run
-
-# → http://localhost:8080/login
+# 視窗 B：壓測儀表板（會自動開瀏覽器）
+.\start-dashboard.bat
+# → http://127.0.0.1:9999
 ```
 
-> Windows 結束時執行 `stop-dev.bat`（關 Redis）；Spring Boot 在視窗按 `Ctrl+C`。
+頁面上按 **▶ 開始壓測**（預設 500 人 / 100 庫存）。結束 App 視窗 `Ctrl+C`，再執行 `stop-dev.bat` 關 Redis。
 
-### 即時監控儀表板
-
-壓測時同步觀看訂單數、庫存、每秒請求、回應碼分布：
-
-```bash
-python jmeter/dashboard.py
-# 開啟 http://127.0.0.1:9999
-```
+跨平台：先起 Redis，再 `./mvnw spring-boot:run`；儀表板 `python jmeter/dashboard.py`。
 
 ---
 

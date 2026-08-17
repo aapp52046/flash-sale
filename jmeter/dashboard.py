@@ -19,10 +19,29 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+
+def _load_dotenv(path):
+    if not os.path.isfile(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key, value = key.strip(), value.strip().strip("'").strip('"')
+            if key:
+                os.environ.setdefault(key, value)
+
+
+_load_dotenv(os.path.join(ROOT_DIR, ".env"))
+
 PSQL = os.environ.get("DASH_PSQL", r"C:\Program Files\PostgreSQL\18\bin\psql.exe")
-DB_PASSWORD = os.environ.get("DASH_DB_PASSWORD", "postgres")
-DB_NAME = os.environ.get("DASH_DB_NAME", "flash_sale")
-REDIS_CLI = os.environ.get("DASH_REDIS_CLI", os.path.join(os.path.dirname(BASE_DIR), "Redis", "redis-cli.exe"))
+DB_PASSWORD = os.environ.get("DASH_DB_PASSWORD") or os.environ.get("DB_PASSWORD", "postgres")
+DB_NAME = os.environ.get("DASH_DB_NAME") or os.environ.get("DB_NAME", "flash_sale")
+REDIS_CLI = os.environ.get("DASH_REDIS_CLI", os.path.join(ROOT_DIR, "Redis", "redis-cli.exe"))
 FLASH_ID = int(os.environ.get("DASH_FLASH_ID", "1"))
 TARGET_STOCK = int(os.environ.get("DASH_STOCK", "100"))
 PORT = int(os.environ.get("DASH_PORT", "9999"))
@@ -88,7 +107,7 @@ def count_dedup_keys():
 def reset_state(stock=None):
     stock = stock or TARGET_STOCK
     sql = (f"TRUNCATE flash_order RESTART IDENTITY; "
-           f"UPDATE flash_sale_product SET flash_stock={stock}, "
+           f"UPDATE flash_sale_product SET flash_stock={stock}, status=1, "
            f"start_time=NOW()-INTERVAL '1 minute', "
            f"end_time=NOW()+INTERVAL '24 hour' WHERE id={FLASH_ID};")
     try:

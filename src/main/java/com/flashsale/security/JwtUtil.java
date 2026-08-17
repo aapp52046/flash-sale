@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 
@@ -17,9 +18,32 @@ public class JwtUtil {
 
     public JwtUtil(@Value("${app.jwt.secret}") String secret,
                    @Value("${app.jwt.expiration-ms}") long expirationMs) {
-        byte[] keyBytes = Base64.getDecoder().decode(secret);
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.secretKey = Keys.hmacShaKeyFor(decodeSecret(secret));
         this.expirationMs = expirationMs;
+    }
+
+    /**
+     * Accepts either standard Base64 (application.yml default) or a raw passphrase
+     * from .env.example. HS256 needs ≥ 32 bytes.
+     */
+    static byte[] decodeSecret(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("app.jwt.secret must not be empty");
+        }
+        try {
+            byte[] decoded = Base64.getDecoder().decode(secret);
+            if (decoded.length >= 32) {
+                return decoded;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // not Base64 — treat as UTF-8 passphrase
+        }
+        byte[] raw = secret.getBytes(StandardCharsets.UTF_8);
+        if (raw.length < 32) {
+            throw new IllegalArgumentException(
+                    "app.jwt.secret must be Base64 or at least 32 characters");
+        }
+        return raw;
     }
 
     public String generateToken(Long userId, String username, String role) {

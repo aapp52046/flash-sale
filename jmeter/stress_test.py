@@ -132,16 +132,22 @@ def main():
         "/api/auth/login", "POST", body={"username": args.admin, "password": args.admin_pw}
     )
     admin_tok = resp.get("data", {}).get("token")
-    status, _ = http_json(
+    status, preheat_body = http_json(
         f"/api/admin/flash/products/{args.flash_id}/preheat",
         "POST",
         token=admin_tok,
     )
-    print(f"[2] preheat status={status} (expect 200)")
+    print(f"[2] preheat status={status} (expect 200) {preheat_body}")
+    st_status, st_body = http_json(
+        f"/api/admin/flash/products/{args.flash_id}/status?status=1",
+        "PUT",
+        token=admin_tok,
+    )
+    print(f"[2] open sale status={st_status} (expect 200) {st_body}")
 
     # 3. concurrent seckill
     body = {"flashProductId": args.flash_id, "quantity": 1}
-    msg_of = {200: "搶購成功", 409: "重複下單", 429: "已售罄"}
+    msg_of = {200: "搶購成功", 400: "未開放/未開始/已結束", 409: "重複下單", 429: "已售罄"}
     flusher = DashFlusher()
     pairs = [(f"u{i:04d}", tok) for i, tok in enumerate(tokens, start=1)]
 
@@ -170,6 +176,9 @@ def main():
     print("[4] result histogram (http_status -> resp code):")
     for k, v in sorted(hist.items(), key=lambda x: str(x[0])):
         print(f"    code {k}: {v}")
+    sample = next((resp for _, resp in results if isinstance(resp, dict) and resp.get("code") not in (200, 429, 409)), None)
+    if sample:
+        print(f"    sample error: {sample}")
 
     flusher.close()
     dash_post("/event", {"user": "system", "code": 0, "msg": "壓測結束",
