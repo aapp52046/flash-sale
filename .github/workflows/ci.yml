@@ -8,6 +8,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: flash_sale_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d flash_sale_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
     steps:
       - uses: actions/checkout@v4
 
@@ -18,4 +41,8 @@ jobs:
           java-version: '21'
 
       - name: Build & test
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/flash_sale_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
         run: ./mvnw -B -ntp verify
