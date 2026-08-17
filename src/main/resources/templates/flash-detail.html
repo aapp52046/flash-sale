@@ -12,16 +12,7 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="/flash">秒殺系統</a>
-        <div class="navbar-nav ms-auto">
-            <span class="nav-link text-light" th:text="${username}">用戶</span>
-            <a class="nav-link" href="/orders">我的訂單</a>
-            <a class="nav-link" href="#" onclick="logout()">登出</a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar :: navbar(${username}, 'flash', ${isAdmin})}"></div>
 
 <div class="container mt-4">
     <a href="/flash" class="btn btn-outline-secondary mb-3">← 返回列表</a>
@@ -63,8 +54,9 @@
                         <strong th:text="${#temporals.format(flashProduct.endTime, 'yyyy-MM-dd HH:mm:ss')}"></strong>
                     </p>
                     <p>狀態：
-                        <span class="badge" th:classappend="${flashProduct.status == 1 ? 'bg-success' : 'bg-secondary'}"
-                              th:text="${flashProduct.status == 1 ? '進行中' : '尚未開始'}"></span>
+                        <span class="badge"
+                              th:classappend="${flashProduct.displayBadgeClass}"
+                              th:text="${flashProduct.displayLabel}">狀態</span>
                     </p>
                 </div>
             </div>
@@ -109,12 +101,18 @@
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             countdownEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            labelEl.textContent = '距離結束';
-            if (currentStock > 0) {
+            if (Number(STATUS) !== 1) {
+                labelEl.textContent = '活動尚未開放';
+                btn.textContent = '尚未開放';
+                btn.disabled = true;
+                btn.className = 'btn btn-secondary seckill-btn';
+            } else if (currentStock > 0) {
+                labelEl.textContent = '距離結束';
                 btn.textContent = '立即搶購';
                 btn.disabled = false;
                 btn.className = 'btn btn-danger seckill-btn';
             } else {
+                labelEl.textContent = '距離結束';
                 btn.textContent = '已售罄';
                 btn.disabled = true;
                 btn.className = 'btn btn-secondary seckill-btn';
@@ -194,13 +192,6 @@
             setTimeout(() => { isClicking = false; }, 2000);
         }
     });
-
-    function logout() {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('username');
-        document.cookie = 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.href = '/login';
-    }
 
     setInterval(updateCountdown, 1000);
     updateCountdown();
