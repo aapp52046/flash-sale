@@ -60,6 +60,11 @@ public class FlashSaleController {
 
     @GetMapping("/orders/{orderNo}")
     public ApiResponse<FlashOrder> orderDetail(@PathVariable String orderNo) {
-        return ApiResponse.success(flashOrderService.getByOrderNo(orderNo));
+        Long userId = securityUtil.getCurrentUserId();
+        if (userId == null) {
+            return ApiResponse.error(401, "請先登入");
+        }
+        return ApiResponse.success(
+                flashOrderService.getAccessibleOrder(orderNo, userId, securityUtil.isAdmin()));
     }
 }

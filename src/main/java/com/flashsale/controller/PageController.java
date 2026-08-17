@@ -28,37 +28,37 @@ public class PageController {
 
     @GetMapping("/flash")
     public String flashList(Model model) {
-        String username = securityUtil.getCurrentUsername();
-        if (username == null) return "redirect:/login";
-        model.addAttribute("username", username);
+        if (!addNav(model)) return "redirect:/login";
         model.addAttribute("flashProducts", flashProductService.getActiveFlashProducts());
         return "flash-list";
     }
 
     @GetMapping("/flash/{id}")
     public String flashDetail(@PathVariable Long id, Model model) {
-        String username = securityUtil.getCurrentUsername();
-        if (username == null) return "redirect:/login";
+        if (!addNav(model)) return "redirect:/login";
         FlashSaleProduct flash = flashProductService.getById(id);
-        model.addAttribute("username", username);
         model.addAttribute("flashProduct", flash);
         return "flash-detail";
     }
 
     @GetMapping("/orders")
     public String myOrders(Model model) {
-        String username = securityUtil.getCurrentUsername();
-        if (username == null) return "redirect:/login";
-        model.addAttribute("username", username);
+        if (!addNav(model)) return "redirect:/login";
         return "my-orders";
     }
 
     @GetMapping("/admin")
     public String adminPage(Model model) {
-        String username = securityUtil.getCurrentUsername();
-        if (username == null) return "redirect:/login";
-        model.addAttribute("username", username);
+        if (!addNav(model)) return "redirect:/login";
         return "admin";
+    }
+
+    private boolean addNav(Model model) {
+        String username = securityUtil.getCurrentUsername();
+        if (username == null) return false;
+        model.addAttribute("username", username);
+        model.addAttribute("isAdmin", securityUtil.isAdmin());
+        return true;
     }
 
     @GetMapping("/")

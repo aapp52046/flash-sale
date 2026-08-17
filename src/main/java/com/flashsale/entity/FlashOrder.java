@@ -48,6 +48,9 @@ public class FlashOrder {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Transient
+    private String productName;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

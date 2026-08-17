@@ -1,5 +1,6 @@
 package com.flashsale.service;
 
+import com.flashsale.common.FlashSaleDisplay;
 import com.flashsale.common.enums.FlashSaleStatus;
 import com.flashsale.common.exception.FlashSaleException;
 import com.flashsale.dto.request.FlashProductRequest;
@@ -69,6 +70,7 @@ public class FlashProductService {
                 .orElseThrow(() -> new FlashSaleException(404, "秒殺商品不存在"));
         productRepository.findById(flash.getProductId())
                 .ifPresent(p -> flash.setProductName(p.getName()));
+        enrichDisplay(flash, LocalDateTime.now());
         return flash;
     }
 
@@ -81,13 +83,31 @@ public class FlashProductService {
         Map<Long, String> names = productRepository.findAllById(
                 list.stream().map(FlashSaleProduct::getProductId).collect(Collectors.toSet())
         ).stream().collect(Collectors.toMap(Product::getId, Product::getName, (a, b) -> a));
-        list.forEach(f -> f.setProductName(names.getOrDefault(f.getProductId(), "商品 #" + f.getProductId())));
+        LocalDateTime now = LocalDateTime.now();
+        list.forEach(f -> {
+            f.setProductName(names.getOrDefault(f.getProductId(), "商品 #" + f.getProductId()));
+            enrichDisplay(f, now);
+        });
         return list;
+    }
+
+    private void enrichDisplay(FlashSaleProduct flash, LocalDateTime now) {
+        flash.setDisplayLabel(FlashSaleDisplay.label(
+                flash.getStatus(), flash.getFlashStock(),
+                flash.getStartTime(), flash.getEndTime(), now));
+        flash.setDisplayBadgeClass(FlashSaleDisplay.badgeClass(
+                flash.getStatus(), flash.getFlashStock(),
+                flash.getStartTime(), flash.getEndTime(), now));
     }
 
     public void preheatStock(Long flashProductId) {
         FlashSaleProduct flash = getById(flashProductId);
         String key = STOCK_KEY_PREFIX + flashProductId;
+        if (flash.getStatus() != null
+                && flash.getStatus() == FlashSaleStatus.IN_PROGRESS.getCode()
+                && Boolean.TRUE.equals(stringRedisTemplate.hasKey(key))) {
+            throw new FlashSaleException(400, "活動進行中，無法覆寫已預熱庫存");
+        }
         // Plain string so Lua DECRBY works (not Jackson JSON)
         stringRedisTemplate.opsForValue().set(key, String.valueOf(flash.getFlashStock()));
 

@@ -47,4 +47,10 @@ public class FlashSaleProduct {
 
     @Transient
     private String productName;
+
+    @Transient
+    private String displayLabel;
+
+    @Transient
+    private String displayBadgeClass;
 }
