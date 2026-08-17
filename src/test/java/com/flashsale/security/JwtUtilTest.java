@@ -24,6 +24,16 @@ class JwtUtilTest {
     }
 
     @Test
+    void acceptsPlaintextPassphraseFromEnvExample() {
+        String passphrase = "change-me-in-production-use-long-random-string";
+        JwtUtil util = new JwtUtil(passphrase, 60_000L);
+
+        String token = util.generateToken(1L, "admin", "ADMIN");
+        assertThat(util.validateToken(token)).isTrue();
+        assertThat(util.getRoleFromToken(token)).isEqualTo("ADMIN");
+    }
+
+    @Test
     void rejectsTamperedToken() {
         String token = jwtUtil.generateToken(1L, "alice", "USER");
         String tampered = token.substring(0, token.length() - 3) + "abc";
